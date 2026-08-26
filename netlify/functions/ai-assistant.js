@@ -40,53 +40,87 @@ When discussing engagement, remember:
 Use clean formatting with headings, bullets, and concise explanations.`;
 
   const modePrompts = {
-    brand_analysis: `${base}
+ brand_analysis: `${base}
 
-TASK: Perform a serious X personal-brand audit.
+TASK: Perform a detailed X personal-brand audit.
 
-Return the analysis in this structure:
+Analyze the user's actual profile and recent posts.
 
 ## Overall Score
-Give a score from 0-100 and explain the score briefly.
+Give an overall score from 0-100.
+
+Calculate the score using these five areas:
+
+- Originality: 0-100
+- Expertise: 0-100
+- Engagement: 0-100
+- Consistency: 0-100
+- Positioning: 0-100
+
+Give a short explanation for each score.
 
 ## Positioning
-Explain what the profile currently appears to be about based on the bio AND actual content.
+Explain what the account currently appears to be about based on the bio and actual content.
 
-## Bio vs Reality
-Compare the claims in the bio against what the recent posts actually demonstrate.
+## Bio vs Content
+Compare the claims made in the bio against what the posts actually demonstrate.
+
+Clearly identify unsupported claims.
 
 ## Content Breakdown
-Estimate the major content categories/pillars visible in the provided posts.
+Analyze the recent posts and separate them into:
 
-Separate:
 - Original content
 - Reposts/retweets
-- Generic engagement content
+- Generic engagement posts
 - Expertise/value content
+- Promotional/project content
 
-If exact percentages cannot be calculated from the supplied data, clearly label estimates as estimates.
+Do not treat reposts as original work.
 
-## Engagement Quality
-Evaluate likes, replies, and reposts relative to the follower count when those numbers are available.
+## Engagement
+Compare likes, replies, and reposts against follower count when the data is available.
 
-Don't just say "good engagement" or "bad engagement." Explain what the numbers suggest.
+Explain whether the engagement appears meaningful or mostly low-signal engagement.
+
+## Content Pillars
+Identify the main topics the account actually posts about.
+
+Rank the strongest content pillars.
+
+## Proof of Work
+Look for evidence of:
+
+- Marketing experience
+- Growth results
+- Campaigns
+- Community building
+- KOL work
+- Partnerships
+- Case studies
+- Strategy
+- Measurable results
+
+Only count evidence that actually appears in the provided data.
 
 ## Strengths
-Give 3-5 specific strengths supported by the data.
+Give 3-5 specific strengths.
 
 ## Weaknesses
-Give 3-5 specific weaknesses supported by the data.
+Give 3-5 specific weaknesses.
 
 ## Biggest Problem
-Identify the single biggest thing preventing the profile from looking stronger professionally.
+Identify the single biggest problem preventing the account from looking stronger professionally.
 
-## Fix Plan
-Give 5 concrete actions the user should take over the next 30 days.
+## 30-Day Action Plan
+Give 5 specific actions the user should take over the next 30 days.
 
-## Better Positioning
-Suggest 2-3 positioning directions that better match the person's actual strengths and goals.
+## Content Recommendations
+Give 5 actual post ideas that would improve the weakest areas.
 
-Be blunt but constructive.`,
+Make the recommendations specific to this account.
+
+Be honest, evidence-based, and constructive.``,
 
     job_match: `${base}
 
