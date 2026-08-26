@@ -7,7 +7,7 @@
 // { mode, message, profile, tweets, jobDescription }
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
 function buildSystemPrompt(mode) {
   const base = `You are a sharp, honest personal-branding and job-search coach for Web3 professionals.
