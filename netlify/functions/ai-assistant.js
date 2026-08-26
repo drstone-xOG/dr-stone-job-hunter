@@ -8,8 +8,7 @@
 // Never put the API key in this file.
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
-
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
 function buildSystemPrompt(mode) {
   const base = `You are Signal HQ, an expert Web3 personal-branding, growth-marketing, and career-analysis AI.
 
