@@ -41,7 +41,7 @@ exports.handler = async (event) => {
   }
 
   let path;
-  const params = new URLSearchParams({ userName: cleanUsername });
+  const params = new URLSearchParams({ username: cleanUsername });
 
   if (type === "profile") {
     path = "/user/info";
