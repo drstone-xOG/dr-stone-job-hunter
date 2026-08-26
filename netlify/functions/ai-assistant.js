@@ -1,15 +1,13 @@
 // netlify/functions/ai-assistant.js
 //
-// Server-side AI call through RapidAPI.
-// RAPIDAPI_KEY must be stored in Netlify environment variables.
+// Server-side Gemini AI call.
+// GEMINI_API_KEY lives only in Netlify environment variables.
 //
 // Frontend POSTs:
 // { mode, message, profile, tweets, jobDescription }
 
-const RAPIDAPI_URL =
-  "https://free-chatgpt-api.p.rapidapi.com/chat-completion-one";
-
-const RAPIDAPI_HOST = "free-chatgpt-api.p.rapidapi.com";
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 function buildSystemPrompt(mode) {
   const base = `You are a sharp, honest personal-branding and job-search coach for Web3 professionals.
@@ -130,7 +128,6 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  // Only POST requests are allowed.
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -141,20 +138,18 @@ exports.handler = async (event) => {
     };
   }
 
-  // Get the RapidAPI key from Netlify environment variables.
-  const apiKey = process.env.RAPIDAPI_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return {
       statusCode: 500,
       headers: jsonHeaders,
       body: JSON.stringify({
-        error: "Server is not configured. Missing RAPIDAPI_KEY.",
+        error: "Server is not configured. Missing GEMINI_API_KEY.",
       }),
     };
   }
 
-  // Parse frontend request.
   let payload;
 
   try {
@@ -177,7 +172,6 @@ exports.handler = async (event) => {
     jobDescription,
   } = payload;
 
-  // Build AI instructions and context.
   const systemPrompt = buildSystemPrompt(mode);
 
   const contextBlock = summarizeContext({
@@ -193,23 +187,35 @@ exports.handler = async (event) => {
     .filter(Boolean)
     .join("\n\n");
 
-  const prompt = `${systemPrompt}
+  const fullPrompt = `${systemPrompt}
 
 ${userMessage || "Please analyze the provided context."}`;
 
   try {
-    // RapidAPI endpoint expects the prompt as a query parameter.
-    const url =
-      `${RAPIDAPI_URL}?prompt=${encodeURIComponent(prompt)}`;
-
-    const upstream = await fetch(url, {
-      method: "GET",
-      headers: {
-        "x-rapidapi-key": apiKey,
-        "x-rapidapi-host": RAPIDAPI_HOST,
-        "Content-Type": "application/json",
-      },
-    });
+    const upstream = await fetch(
+      `${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.6,
+          },
+        }),
+      }
+    );
 
     const responseText = await upstream.text();
 
@@ -223,26 +229,18 @@ ${userMessage || "Please analyze the provided context."}`;
       };
     }
 
-    // Handle RapidAPI errors.
     if (!upstream.ok) {
-      let detail = "Unknown RapidAPI error.";
+      let detail = "Unknown Gemini API error.";
 
-      if (typeof data === "string") {
-        detail = data;
+      if (data?.error?.message) {
+        detail = data.error.message;
       } else if (data?.message) {
         detail = data.message;
-      } else if (data?.error) {
-        detail =
-          typeof data.error === "string"
-            ? data.error
-            : JSON.stringify(data.error);
-      } else if (data?.response) {
-        detail = data.response;
       } else {
         detail = JSON.stringify(data);
       }
 
-      console.error("RapidAPI error:", {
+      console.error("Gemini API error:", {
         status: upstream.status,
         detail,
       });
@@ -258,35 +256,27 @@ ${userMessage || "Please analyze the provided context."}`;
       };
     }
 
-    // RapidAPI response example:
-    // {
-    //   "status": "success",
-    //   "response": "Hello, how can I assist you today?"
-    // }
-
     const reply =
-      data?.response ||
-      data?.result ||
-      data?.message ||
-      data?.choices?.[0]?.message?.content ||
-      data?.raw ||
+      data?.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("") ||
       "No response generated.";
 
     return {
       statusCode: 200,
       headers: jsonHeaders,
       body: JSON.stringify({
-        reply: String(reply),
+        reply,
       }),
     };
   } catch (err) {
-    console.error("RapidAPI connection error:", err);
+    console.error("Gemini connection error:", err);
 
     return {
       statusCode: 502,
       headers: jsonHeaders,
       body: JSON.stringify({
-        error: "Could not reach RapidAPI AI service.",
+        error: "Could not reach Gemini API.",
         detail: String(err?.message || err),
       }),
     };
