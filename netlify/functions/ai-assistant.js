@@ -1,96 +1,228 @@
 // netlify/functions/ai-assistant.js
 //
-// Server-side Gemini AI call.
-// GEMINI_API_KEY lives only in Netlify environment variables.
+// Signal HQ AI Assistant
+// Gemini-powered Web3 X profile, content, job-match, outreach,
+// and post-idea analysis.
 //
-// Frontend POSTs:
-// { mode, message, profile, tweets, jobDescription }
+// GEMINI_API_KEY must be stored in Netlify Environment Variables.
+// Never put the API key in this file.
 
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
 function buildSystemPrompt(mode) {
-  const base = `You are a sharp, honest personal-branding and job-search coach for Web3 professionals.
+  const base = `You are Signal HQ, an expert Web3 personal-branding, growth-marketing, and career-analysis AI.
 
-You are direct, specific, and never generic.
+Your job is to analyze the user's REAL X profile and REAL recent posts and give useful, evidence-based advice.
 
-Always ground your advice in the actual X profile and posts data provided.
+IMPORTANT ANALYSIS RULES:
 
-Never invent facts about the person's account. If data is missing or thin, say so plainly.
+1. NEVER invent facts.
+2. Clearly distinguish ORIGINAL POSTS from REPOSTS/RETWEETS when the available data allows it.
+3. Do not treat a repost as proof that the user personally created or believes the content.
+4. Generic posts such as "GM", "GN", simple greetings, motivational posts, engagement bait, and low-information posts should be identified as LOW-SIGNAL CONTENT.
+5. Look for evidence of actual expertise: original analysis, educational threads, market observations, case studies, growth results, strategy, opinions, technical knowledge, project insights, or useful commentary.
+6. Analyze engagement relative to follower count rather than looking only at raw likes.
+7. Identify the user's main content pillars based on what they ACTUALLY post.
+8. Compare the user's bio/positioning against their actual content.
+9. If the bio makes a claim that the content does not support, say so directly.
+10. Do not automatically praise the user. Give honest criticism when warranted.
+11. Never claim a user has experience, achievements, clients, or results unless the provided data supports it.
+12. If there isn't enough data to make a conclusion, explicitly say that.
+13. Keep recommendations practical and specific to Web3.
+14. Use the available data instead of giving generic social-media advice.
 
-Keep formatting clean and easy to read. Use short paragraphs and bullets where useful.
+When discussing engagement, remember:
+- A large follower count does not automatically mean strong influence.
+- A small account can have excellent engagement.
+- Reposts generally provide weaker evidence of original expertise than original posts.
+- GM/GN and other generic engagement posts should not be counted as strong authority-building content.
 
-Do not be sycophantic. If the profile or fit is weak, say so and explain why.`;
+Use clean formatting with headings, bullets, and concise explanations.`;
 
   const modePrompts = {
     brand_analysis: `${base}
 
-Task: Analyze this X profile and recent posts for Web3 personal branding.
+TASK: Perform a serious X personal-brand audit.
 
-Give:
-1. Personal-brand score out of 100 with a one-line justification
-2. 3-5 concrete strengths
-3. 3-5 concrete weaknesses or gaps
-4. Specific bio and positioning rewrite suggestions
-5. 2-3 Web3 role types this profile currently signals fit for`,
+Return the analysis in this structure:
+
+## Overall Score
+Give a score from 0-100 and explain the score briefly.
+
+## Positioning
+Explain what the profile currently appears to be about based on the bio AND actual content.
+
+## Bio vs Reality
+Compare the claims in the bio against what the recent posts actually demonstrate.
+
+## Content Breakdown
+Estimate the major content categories/pillars visible in the provided posts.
+
+Separate:
+- Original content
+- Reposts/retweets
+- Generic engagement content
+- Expertise/value content
+
+If exact percentages cannot be calculated from the supplied data, clearly label estimates as estimates.
+
+## Engagement Quality
+Evaluate likes, replies, and reposts relative to the follower count when those numbers are available.
+
+Don't just say "good engagement" or "bad engagement." Explain what the numbers suggest.
+
+## Strengths
+Give 3-5 specific strengths supported by the data.
+
+## Weaknesses
+Give 3-5 specific weaknesses supported by the data.
+
+## Biggest Problem
+Identify the single biggest thing preventing the profile from looking stronger professionally.
+
+## Fix Plan
+Give 5 concrete actions the user should take over the next 30 days.
+
+## Better Positioning
+Suggest 2-3 positioning directions that better match the person's actual strengths and goals.
+
+Be blunt but constructive.`,
 
     job_match: `${base}
 
-Task: Assess how well this person's profile fits the provided Web3 job.
+TASK: Analyze how well this person fits the provided Web3 job.
 
-Give:
-1. Overall fit percentage with reasoning
-2. Matching strengths tied to specific profile or post evidence
-3. Missing requirements or gaps
-4. What to emphasize in the application
-5. What could hurt the application
+Return:
 
-Be honest rather than inflating the percentage.`,
+## Fit Score
+Give a percentage and explain it.
+
+## Strong Matches
+List requirements supported by actual profile/content evidence.
+
+## Weak Matches
+List requirements that are missing or poorly demonstrated.
+
+## Evidence From X
+Explain which parts of the profile/content help or hurt the application.
+
+## Positioning Risk
+Explain anything on the X profile that could make a recruiter question the candidate.
+
+## Application Strategy
+Tell the user exactly what to emphasize.
+
+## Verdict
+Give a clear conclusion:
+- Strong fit
+- Possible fit
+- Weak fit
+
+Do not inflate the score.`,
 
     outreach: `${base}
 
-Task: Draft a short, natural, non-cringe outreach message to a founder, recruiter, or Web3 project.
+TASK: Create a short outreach message to a Web3 founder, recruiter, project, or hiring manager.
 
-Use the person's actual profile, posts, and target context.
+Use the actual profile and context provided.
 
-Keep it under 120 words.
+The message should:
+- Sound human
+- Be concise
+- Avoid cringe
+- Avoid generic "I love what you're building" language
+- Mention a relevant skill or observation when supported by the data
+- Clearly communicate why the user is reaching out
 
-Make it specific and human, not templated.`,
+Keep it under 120 words.`,
 
     post_ideas: `${base}
 
-Task: Create 3-5 concrete X post ideas or drafts tailored to the person's existing voice and topics.
+TASK: Create 5 X post ideas specifically designed to improve this person's Web3 personal brand.
 
-The goal is to attract Web3 recruiters, founders, and projects.
+Base the ideas on the user's actual content and weaknesses.
 
-Show actual draft text, not just topics.`,
+For each idea provide:
+
+1. Content angle
+2. Why it fits the user's positioning
+3. A ready-to-post draft
+
+Prioritize:
+- Original expertise
+- Useful observations
+- Web3 growth/marketing insights
+- Case studies
+- Lessons learned
+- Strong opinions backed by reasoning
+
+Avoid generic GM/GN posts and engagement bait.`,
 
     chat: `${base}
 
-Task: Answer the user's question directly.
+TASK: Answer the user's question directly.
 
-Use their X profile and posts as context whenever relevant.`,
+Use the supplied X profile and posts as context when relevant.
+
+If the user asks about their profile, reference actual evidence from the supplied data rather than giving generic advice.`,
   };
 
   return modePrompts[mode] || modePrompts.chat;
+}
+
+function isLikelyRepost(tweet) {
+  const text = String(tweet?.text || tweet?.full_text || "").trim();
+
+  return (
+    tweet?.retweeted === true ||
+    tweet?.isRetweet === true ||
+    tweet?.is_repost === true ||
+    /^RT\s+@/i.test(text) ||
+    /^reposted\s+/i.test(text)
+  );
+}
+
+function isGenericPost(tweet) {
+  const text = String(tweet?.text || tweet?.full_text || "")
+    .trim()
+    .toLowerCase();
+
+  if (!text) return true;
+
+  const genericPatterns = [
+    /^gm[!.]?\s*(ct|web3|crypto)?$/i,
+    /^gn[!.]?\s*(ct|web3|crypto)?$/i,
+    /^good morning[!.]?\s*(ct|everyone)?$/i,
+    /^good night[!.]?\s*(ct|everyone)?$/i,
+  ];
+
+  if (genericPatterns.some((pattern) => pattern.test(text))) {
+    return true;
+  }
+
+  return text.length < 25;
 }
 
 function summarizeContext({ profile, tweets, jobDescription }) {
   const parts = [];
 
   if (profile) {
+    const followers = Number(profile.followers) || 0;
+    const following = Number(profile.following) || 0;
+
     parts.push(
       `X PROFILE DATA:
 ${JSON.stringify(
   {
-    username: profile.userName,
-    name: profile.name,
-    bio: profile.description,
-    location: profile.location,
-    followers: profile.followers,
-    following: profile.following,
-    createdAt: profile.createdAt,
-    statusesCount: profile.statusesCount,
+    username: profile.userName || profile.username || "",
+    name: profile.name || "",
+    bio: profile.description || "",
+    location: profile.location || "",
+    followers,
+    following,
+    postsCount: profile.statusesCount || 0,
+    createdAt: profile.createdAt || "",
   },
   null,
   2
@@ -98,21 +230,43 @@ ${JSON.stringify(
     );
   }
 
-  if (tweets && Array.isArray(tweets) && tweets.length > 0) {
-    const compact = tweets.slice(0, 20).map((t) => ({
-      text: t.text || t.full_text || "",
-      likes: t.likeCount ?? t.favorite_count ?? 0,
-      retweets: t.retweetCount ?? t.retweet_count ?? 0,
-      replies: t.replyCount ?? t.reply_count ?? 0,
-      createdAt: t.createdAt || t.created_at || "",
-    }));
+  if (Array.isArray(tweets) && tweets.length > 0) {
+    const analyzedTweets = tweets.slice(0, 20).map((t) => {
+      const likes = Number(
+        t.likeCount ?? t.favorite_count ?? t.likes ?? 0
+      );
+
+      const retweets = Number(
+        t.retweetCount ?? t.retweet_count ?? t.retweets ?? 0
+      );
+
+      const replies = Number(
+        t.replyCount ?? t.reply_count ?? t.replies ?? 0
+      );
+
+      const repost = isLikelyRepost(t);
+      const generic = isGenericPost(t);
+
+      return {
+        text: t.text || t.full_text || "",
+        likes,
+        retweets,
+        replies,
+        createdAt: t.createdAt || t.created_at || "",
+        classification: {
+          likelyRepost: repost,
+          likelyOriginal: !repost,
+          lowSignalGeneric: generic,
+        },
+      };
+    });
 
     parts.push(
-      `RECENT POSTS (up to 20):
-${JSON.stringify(compact, null, 2)}`
+      `RECENT X POSTS:
+${JSON.stringify(analyzedTweets, null, 2)}`
     );
   } else {
-    parts.push("RECENT POSTS: No posts were provided.");
+    parts.push("RECENT X POSTS: No posts were provided.");
   }
 
   if (jobDescription) {
@@ -165,11 +319,11 @@ exports.handler = async (event) => {
   }
 
   const {
-    mode,
-    message,
-    profile,
-    tweets,
-    jobDescription,
+    mode = "chat",
+    message = "",
+    profile = null,
+    tweets = [],
+    jobDescription = "",
   } = payload;
 
   const systemPrompt = buildSystemPrompt(mode);
@@ -189,7 +343,7 @@ exports.handler = async (event) => {
 
   const fullPrompt = `${systemPrompt}
 
-${userMessage || "Please analyze the provided context."}`;
+${userMessage || "Analyze the provided X profile and content."}`;
 
   try {
     const upstream = await fetch(
@@ -211,7 +365,8 @@ ${userMessage || "Please analyze the provided context."}`;
             },
           ],
           generationConfig: {
-            temperature: 0.6,
+            temperature: 0.5,
+            maxOutputTokens: 3000,
           },
         }),
       }
@@ -256,11 +411,24 @@ ${userMessage || "Please analyze the provided context."}`;
       };
     }
 
-    const reply =
-      data?.candidates?.[0]?.content?.parts
-        ?.map((part) => part.text || "")
-        .join("") ||
-      "No response generated.";
+    const parts =
+      data?.candidates?.[0]?.content?.parts || [];
+
+    const reply = parts
+      .map((part) => part?.text || "")
+      .join("")
+      .trim();
+
+    if (!reply) {
+      return {
+        statusCode: 502,
+        headers: jsonHeaders,
+        body: JSON.stringify({
+          error: "Gemini returned an empty response.",
+          detail: data,
+        }),
+      };
+    }
 
     return {
       statusCode: 200,
