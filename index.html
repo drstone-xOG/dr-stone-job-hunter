@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Signal HQ — X Brand & Job Hunter</title>
+<meta name="description" content="Analyze your X presence and get AI-powered Web3 job-hunting help." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0D10;
+    --surface:#12171C;
+    --surface-raised:#181F26;
+    --hairline:#232B31;
+    --text:#E8EDF0;
+    --text-muted:#7C8A93;
+    --signal:#4CE0B3;
+    --signal-dim:#2C7A63;
+    --warn:#E8A33D;
+    --danger:#E15A5A;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:var(--signal);}
+  button{font-family:inherit;}
+
+  /* Layout */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:230px;
+    flex-shrink:0;
+    background:var(--surface);
+    border-right:1px solid var(--hairline);
+    padding:22px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+  .brand{
+    display:flex;align-items:center;gap:9px;
+    padding:0 8px 20px 8px;
+    margin-bottom:8px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .brand-mark{
+    width:26px;height:26px;border-radius:6px;
+    background:linear-gradient(135deg,var(--signal),var(--signal-dim));
+    flex-shrink:0;
+  }
+  .brand-name{font-size:15px;font-weight:600;}
+  .brand-sub{font-size:10.5px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;}
+
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;
+    border-radius:8px;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:13.5px;
+    font-weight:500;
+    transition:background .15s, color .15s;
+    user-select:none;
+  }
+  .nav-item:hover{background:var(--surface-raised);color:var(--text);}
+  .nav-item.active{background:var(--surface-raised);color:var(--signal);}
+  .nav-icon{width:16px;text-align:center;font-size:14px;}
+
+  .sidebar-foot{margin-top:auto;padding:12px 8px 0 8px;border-top:1px solid var(--hairline);font-size:11px;color:var(--text-muted);}
+
+  .main{flex:1;padding:32px 40px;max-width:980px;}
+  .view{display:none;animation:fade .2s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .page-head{margin-bottom:26px;}
+  .page-head h1{font-size:22px;margin:0 0 6px 0;}
+  .page-head p{color:var(--text-muted);font-size:13.5px;margin:0;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .grid{display:grid;gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  @media(max-width:800px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;} .sidebar{display:none;} .main{padding:20px;}}
+
+  .stat{padding:16px;}
+  .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;}
+  .stat-value{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:500;color:var(--text);}
+  .stat-value.signal{color:var(--signal);}
+
+  /* Signature element: signal strip (engagement waveform) */
+  .signal-strip{
+    display:flex;align-items:flex-end;gap:3px;height:64px;
+    padding:12px 16px 0 16px;
+  }
+  .signal-bar{
+    flex:1;
+    background:linear-gradient(180deg,var(--signal),var(--signal-dim));
+    border-radius:2px 2px 0 0;
+    min-height:3px;
+    opacity:.85;
+  }
+  .signal-caption{display:flex;justify-content:space-between;padding:8px 16px 14px 16px;font-size:11px;color:var(--text-muted);}
+
+  input[type=text],textarea{
+    width:100%;
+    background:var(--surface-raised);
+    border:1px solid var(--hairline);
+    color:var(--text);
+    border-radius:8px;
+    padding:11px 13px;
+    font-family:inherit;
+    font-size:13.5px;
+    resize:vertical;
+  }
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--signal-dim);}
+  label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;}
+
+  .btn{
+    background:var(--signal);
+    color:#04140F;
+    border:none;
+    border-radius:8px;
+    padding:10px 18px;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    transition:transform .1s, opacity .15s;
+  }
+  .btn:hover{opacity:.9;}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--hairline);color:var(--text);
+  }
+  .btn-ghost:hover{border-color:var(--signal-dim);}
+
+  .post{
+    padding:14px 0;
+    border-bottom:1px solid var(--hairline);
+    font-size:13.5px;
+    line-height:1.55;
+  }
+  .post:last-child{border-bottom:none;}
+  .post-meta{display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;}
+
+  .empty{
+    padding:36px 20px;text-align:center;color:var(--text-muted);font-size:13.5px;
+  }
+  .empty .btn{margin-top:14px;}
+
+  .badge{
+    display:inline-block;font-size:10.5px;font-weight:600;
+    padding:3px 8px;border-radius:20px;
+    background:rgba(76,224,179,.12);color:var(--signal);
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .warn-badge{background:rgba(232,163,61,.14);color:var(--warn);}
+
+  .prose{white-space:pre-wrap;line-height:1.65;font-size:13.75px;}
+  .prose h1,.prose h2,.prose h3{margin-top:1.2em;}
+
+  .chat-log{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;max-height:52vh;overflow-y:auto;padding-right:4px;}
+  .msg{padding:12px 14px;border-radius:10px;font-size:13.5px;line-height:1.55;max-width:88%;}
+  .msg.user{background:var(--surface-raised);align-self:flex-end;}
+  .msg.ai{background:rgba(76,224,179,.06);border:1px solid rgba(76,224,179,.18);align-self:flex-start;}
+  .chat-input-row{display:flex;gap:10px;}
+  .chat-input-row textarea{flex:1;min-height:44px;max-height:120px;}
+
+  .settings-row{margin-bottom:20px;}
+  .hint{font-size:12px;color:var(--text-muted);margin-top:6px;}
+  .kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--hairline);font-size:13px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--text-muted);}
+  .kv .v{font-family:'IBM Plex Mono',monospace;}
+
+  .loading{color:var(--text-muted);font-size:13px;padding:16px 0;}
+  .spinner{
+    display:inline-block;width:12px;height:12px;border-radius:50%;
+    border:2px solid var(--hairline);border-top-color:var(--signal);
+    animation:spin .7s linear infinite;margin-right:8px;vertical-align:-1px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .error-box{
+    background:rgba(225,90,90,.08);border:1px solid rgba(225,90,90,.3);
+    color:#F0A8A8;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">Signal HQ</div>
+        <div class="brand-sub">X → Brand → Jobs</div>
+      </div>
+    </div>
+
+    <div class="nav-item active" data-view="dashboard"><span class="nav-icon">◆</span> Dashboard</div>
+    <div class="nav-item" data-view="profile"><span class="nav-icon">◇</span> X Profile</div>
+    <div class="nav-item" data-view="posts"><span class="nav-icon">≣</span> Posts</div>
+    <div class="nav-item" data-view="brand"><span class="nav-icon">▲</span> Brand Analysis</div>
+    <div class="nav-item" data-view="jobs"><span class="nav-icon">⌗</span> Job Hunter</div>
+    <div class="nav-item" data-view="assistant"><span class="nav-icon">✦</span> AI Assistant</div>
+    <div class="nav-item" data-view="settings"><span class="nav-icon">⚙</span> Settings</div>
+
+    <div class="sidebar-foot">Data stays local + server-side.<br>No keys ever touch this browser.</div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="page-head">
+        <h1>Dashboard</h1>
+        <p>Snapshot of your public X signal, at a glance.</p>
+      </div>
+      <div id="dash-content"><div class="empty">Set your X username in Settings to get started.<br><button class="btn" onclick="goTo('settings')">Go to Settings</button></div></div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="view" id="view-profile">
+      <div class="page-head">
+        <h1>X Profile</h1>
+        <p>Raw public profile data pulled for your account.</p>
+      </div>
+      <div id="profile-content" class="card"><div class="empty">No data yet — set your username in Settings.</div></div>
+    </section>
+
+    <!-- POSTS -->
+    <section class="view" id="view-posts">
+      <div class="page-head">
+        <h1>Posts</h1>
+        <p>Your most recent public posts.</p>
+      </div>
+      <div id="posts-content" class="card"><div class="empty">No data yet — set your username in Settings.</div></div>
+    </section>
+
+    <!-- BRAND ANALYSIS -->
+    <section class="view" id="view-brand">
+      <div class="page-head">
+        <h1>Personal Brand Analysis</h1>
+        <p>AI reads your profile + posts and scores your Web3 personal brand.</p>
+      </div>
+      <button class="btn" id="run-brand-analysis">Analyze my brand</button>
+      <div style="margin-top:18px;" id="brand-content"></div>
+    </section>
+
+    <!-- JOB HUNTER -->
+    <section class="view" id="view-jobs">
+      <div class="page-head">
+        <h1>Job Hunter</h1>
+        <p>Paste a Web3 job description and see how you match, then generate outreach.</p>
+      </div>
+      <div class="card" style="margin-bottom:18px;">
+        <label>Job description</label>
+        <textarea id="job-desc" rows="8" placeholder="Paste the job posting here..."></textarea>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+          <button class="btn" id="run-job-match">Check my fit</button>
+          <button class="btn btn-ghost" id="run-outreach">Draft outreach message</button>
+          <button class="btn btn-ghost" id="run-cover">Draft application answer</button>
+        </div>
+      </div>
+      <div id="jobs-content"></div>
+    </section>
+
+    <!-- AI ASSISTANT -->
+    <section class="view" id="view-assistant">
+      <div class="page-head">
+        <h1>AI Assistant</h1>
+        <p>Ask anything — it has your profile and recent posts as context.</p>
+      </div>
+      <div class="card">
+        <div class="chat-log" id="chat-log">
+          <div class="msg ai">Hey — I've got your X profile and recent posts as context once you set your username. Ask me things like "how can I make my profile more attractive to Web3 recruiters?" or "what should I post today?"</div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chat-input" placeholder="Ask the assistant..."></textarea>
+          <button class="btn" id="chat-send">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="page-head">
+        <h1>Settings</h1>
+        <p>Set the X account this dashboard analyzes.</p>
+      </div>
+      <div class="card" style="max-width:460px;">
+        <div class="settings-row">
+          <label>X (Twitter) username</label>
+          <input type="text" id="username-input" placeholder="e.g. drstone" />
+          <div class="hint">No @ needed. This is stored only in your browser's local storage.</div>
+        </div>
+        <button class="btn" id="save-username">Save & load data</button>
+      </div>
+      <div class="card" style="max-width:460px;margin-top:16px;">
+        <div class="kv"><span class="k">X data source</span><span class="v">TwitterAPIs.com</span></div>
+        <div class="kv"><span class="k">AI provider</span><span class="v">Server-side (OpenAI-compatible)</span></div>
+        <div class="kv"><span class="k">Secrets location</span><span class="v">Netlify env vars only</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+const state = {
+  username: localStorage.getItem('signalhq_username') || '',
+  profile: null,
+  tweets: null,
+};
+
+// ---------- Navigation ----------
+function goTo(view){
+  $$('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+  $$('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + view));
+}
+$$('.nav-item').forEach(el => el.addEventListener('click', () => goTo(el.dataset.view)));
+
+// ---------- API helpers ----------
+async function fetchX(type, cursor){
+  const params = new URLSearchParams({ type, username: state.username });
+  if (cursor) params.set('cursor', cursor);
+  const res = await fetch('/.netlify/functions/x-data?' + params.toString());
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+async function callAI(mode, message){
+  const res = await fetch('/.netlify/functions/ai-assistant', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      mode, message,
+      profile: state.profile?.data || state.profile,
+      tweets: state.tweets?.tweets || state.tweets,
+      jobDescription: $('#job-desc') ? $('#job-desc').value : undefined,
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data.detail && (data.detail.message || data.detail)) || data.error || 'AI request failed');
+  return data.reply;
+}
+
+function errorBox(msg){
+  return `<div class="error-box">${escapeHtml(msg)}</div>`;
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+// ---------- Load data ----------
+async function loadAll(){
+  if (!state.username) return;
+
+  $('#dash-content').innerHTML = `<div class="loading"><span class="spinner"></span>Loading @${escapeHtml(state.username)}...</div>`;
+  $('#profile-content').innerHTML = `<div class="loading"><span class="spinner"></span>Loading...</div>`;
+  $('#posts-content').innerHTML = `<div class="loading"><span class="spinner"></span>Loading...</div>`;
+
+  try {
+    const profileRes = await fetchX('profile');
+    state.profile = profileRes.data || profileRes;
+  } catch(e){
+    $('#dash-content').innerHTML = errorBox('Could not load profile: ' + e.message);
+    $('#profile-content').innerHTML = errorBox('Could not load profile: ' + e.message);
+    return;
+  }
+
+  try {
+    const tweetsRes = await fetchX('tweets');
+    state.tweets = tweetsRes.tweets || tweetsRes.data || tweetsRes;
+    if (!Array.isArray(state.tweets)) state.tweets = [];
+  } catch(e){
+    state.tweets = [];
+    $('#posts-content').innerHTML = errorBox('Could not load posts: ' + e.message);
+  }
+
+  renderDashboard();
+  renderProfile();
+  renderPosts();
+}
+
+// ---------- Renderers ----------
+function renderDashboard(){
+  const p = state.profile || {};
+  const tweets = state.tweets || [];
+  const engagements = tweets.map(t => (t.likeCount||t.favorite_count||0) + (t.retweetCount||t.retweet_count||0));
+  const max = Math.max(1, ...engagements);
+  const bars = engagements.slice(0,20).map(v => `<div class="signal-bar" style="height:${Math.max(4, (v/max)*64)}px" title="${v} engagements"></div>`).join('');
+
+  $('#dash-content').innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:18px;">
+      <div class="card stat"><div class="stat-label">Followers</div><div class="stat-value signal">${fmtNum(p.followers)}</div></div>
+      <div class="card stat"><div class="stat-label">Following</div><div class="stat-value">${fmtNum(p.following)}</div></div>
+      <div class="card stat"><div class="stat-label">Total Posts</div><div class="stat-value">${fmtNum(p.statusesCount)}</div></div>
+      <div class="card stat"><div class="stat-label">Recent Posts Loaded</div><div class="stat-value">${tweets.length}</div></div>
+    </div>
+    <div class="card">
+      <div class="stat-label" style="padding:16px 16px 0 16px;">Recent Signal (engagement per post)</div>
+      <div class="signal-strip">${bars || '<div class="empty" style="padding:10px 0;">No posts loaded yet.</div>'}</div>
+      <div class="signal-caption"><span>oldest</span><span>newest</span></div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="stat-label" style="margin-bottom:10px;">Bio</div>
+      <div class="prose">${escapeHtml(p.description || 'No bio set.')}</div>
+    </div>
+  `;
+}
+
+function renderProfile(){
+  const p = state.profile || {};
+  $('#profile-content').innerHTML = `
+    <div class="kv"><span class="k">Handle</span><span class="v">@${escapeHtml(p.userName||state.username)}</span></div>
+    <div class="kv"><span class="k">Display name</span><span class="v">${escapeHtml(p.name||'—')}</span></div>
+    <div class="kv"><span class="k">Location</span><span class="v">${escapeHtml(p.location||'—')}</span></div>
+    <div class="kv"><span class="k">Followers</span><span class="v">${fmtNum(p.followers)}</span></div>
+    <div class="kv"><span class="k">Following</span><span class="v">${fmtNum(p.following)}</span></div>
+    <div class="kv"><span class="k">Total posts</span><span class="v">${fmtNum(p.statusesCount)}</span></div>
+    <div class="kv"><span class="k">Account created</span><span class="v">${escapeHtml(p.createdAt||'—')}</span></div>
+    <div class="kv"><span class="k">Verified</span><span class="v">${p.isBlueVerified ? 'Yes' : 'No'}</span></div>
+    <div style="margin-top:16px;">
+      <div class="stat-label" style="margin-bottom:8px;">Bio</div>
+      <div class="prose">${escapeHtml(p.description||'—')}</div>
+    </div>
+  `;
+}
+
+function renderPosts(){
+  const tweets = state.tweets || [];
+  if (!tweets.length){
+    $('#posts-content').innerHTML = `<div class="empty">No posts found for this account.</div>`;
+    return;
+  }
+  $('#posts-content').innerHTML = tweets.map(t => `
+    <div class="post">
+      <div>${escapeHtml(t.text || t.full_text || '')}</div>
+      <div class="post-meta">
+        <span>♡ ${fmtNum(t.likeCount ?? t.favorite_count ?? 0)}</span>
+        <span>↻ ${fmtNum(t.retweetCount ?? t.retweet_count ?? 0)}</span>
+        <span>💬 ${fmtNum(t.replyCount ?? t.reply_count ?? 0)}</span>
+        <span>${escapeHtml(t.createdAt || t.created_at || '')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function fmtNum(n){
+  if (n === undefined || n === null) return '—';
+  return Number(n).toLocaleString();
+}
+
+// ---------- Settings ----------
+$('#username-input').value = state.username;
+$('#save-username').addEventListener('click', () => {
+  const val = $('#username-input').value.trim().replace(/^@/, '');
+  if (!val) return;
+  state.username = val;
+  localStorage.setItem('signalhq_username', val);
+  loadAll();
+  goTo('dashboard');
+});
+
+// ---------- Brand analysis ----------
+$('#run-brand-analysis').addEventListener('click', async () => {
+  if (!state.username) { $('#brand-content').innerHTML = errorBox('Set your X username in Settings first.'); return; }
+  $('#brand-content').innerHTML = `<div class="loading"><span class="spinner"></span>Analyzing your brand...</div>`;
+  try {
+    const reply = await callAI('brand_analysis', 'Analyze my X profile and posts for Web3 personal branding.');
+    $('#brand-content').innerHTML = `<div class="card prose">${escapeHtml(reply)}</div>`;
+  } catch(e){
+    $('#brand-content').innerHTML = errorBox(e.message);
+  }
+});
+
+// ---------- Job hunter ----------
+async function runJobAction(mode, label){
+  const jd = $('#job-desc').value.trim();
+  if (!jd){ $('#jobs-content').innerHTML = errorBox('Paste a job description first.'); return; }
+  if (!state.username){ $('#jobs-content').innerHTML = errorBox('Set your X username in Settings first.'); return; }
+  $('#jobs-content').innerHTML = `<div class="loading"><span class="spinner"></span>${label}...</div>`;
+  try {
+    const reply = await callAI(mode, mode === 'job_match' ? 'Assess my fit for this job.' : (mode === 'outreach' ? 'Draft an outreach message for this opportunity.' : 'Draft an application answer for this job.'));
+    $('#jobs-content').innerHTML = `<div class="card prose">${escapeHtml(reply)}</div>`;
+  } catch(e){
+    $('#jobs-content').innerHTML = errorBox(e.message);
+  }
+}
+$('#run-job-match').addEventListener('click', () => runJobAction('job_match', 'Checking fit'));
+$('#run-outreach').addEventListener('click', () => runJobAction('outreach', 'Drafting outreach'));
+$('#run-cover').addEventListener('click', () => runJobAction('chat', 'Drafting application answer'));
+
+// ---------- AI Assistant chat ----------
+function appendMsg(role, text){
+  const log = $('#chat-log');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+async function sendChat(){
+  const input = $('#chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  appendMsg('user', text);
+  input.value = '';
+  const log = $('#chat-log');
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'msg ai';
+  loadingDiv.innerHTML = '<span class="spinner"></span>Thinking...';
+  log.appendChild(loadingDiv);
+  log.scrollTop = log.scrollHeight;
+  try {
+    const reply = await callAI('chat', text);
+    loadingDiv.textContent = reply;
+  } catch(e){
+    loadingDiv.textContent = 'Error: ' + e.message;
+  }
+}
+$('#chat-send').addEventListener('click', sendChat);
+$('#chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
+});
+
+// ---------- Init ----------
+if (state.username) loadAll();
+</script>
+</body>
+</html>

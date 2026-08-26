@@ -1,0 +1,9 @@
+{
+  "name": "signal-brand-hq",
+  "version": "1.0.0",
+  "description": "X profile analysis + AI job-hunting assistant for Web3 personal branding",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
